@@ -1,0 +1,17 @@
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Added a subtle gradient background for a more modern feel */
+body {
+    background: linear-gradient(to right, #f8f9fa, #e9ecef);
+}
+
+body.dark {
+    background: linear-gradient(to right, #232526, #414345);
+}
