@@ -16,21 +16,18 @@ const UserSchema = new mongoose.Schema({
     }
   },
   semester: { type: Number, required: function() { return this.role === 'Student'; } },
-  division: { type: String, required: function() { return this.role === 'Student'; } },
   subjects: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Subject' }] // For Faculty
 }, { timestamps: true });
 
 // Password hashing middleware
 UserSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {
-    return next();
+    next();
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
-  next();
 });
 
-// Method to compare passwords
 UserSchema.methods.matchPassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };

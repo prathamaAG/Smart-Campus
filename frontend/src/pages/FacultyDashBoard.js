@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, Paper, Grid, useTheme, Divider, List, ListItem, ListItemText, ListItemIcon, alpha } from '@mui/material';
-import { Event, Assignment } from '@mui/icons-material';
+import { Box, Typography, Paper, Grid, useTheme, Divider, List, ListItem, ListItemText, alpha, Button, Chip } from '@mui/material';
+import { Event, Assignment, Refresh } from '@mui/icons-material';
 import Layout from '../components/common/Layout';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/api';
@@ -13,40 +13,78 @@ const FacultyDashboard = ({ toggleTheme }) => {
     
     const [upcomingLectures, setUpcomingLectures] = useState([]);
     const [postedAssignments, setPostedAssignments] = useState([]);
+    const [loading, setLoading] = useState(false);
+
+    const fetchUpcomingLectures = async () => {
+        setLoading(true);
+        try {
+            const lecturesRes = await api.get('/lectures/faculty/upcoming');
+            setUpcomingLectures(lecturesRes.data);
+        } catch (error) {
+            console.error("Error fetching upcoming lectures", error);
+        }
+        setLoading(false);
+    };
+
+    const fetchPostedAssignments = async () => {
+        try {
+            const assignmentsRes = await api.get('/assignments');
+            const facultyAssignments = assignmentsRes.data
+                .filter(assignment => assignment.faculty._id === user._id)
+                .slice(0, 5);
+            setPostedAssignments(facultyAssignments);
+        } catch (error) {
+            console.error("Error fetching posted assignments", error);
+        }
+    };
 
     useEffect(() => {
-        const fetchData = async () => {
-            if (user?._id) {
-                try {
-                    const [lecturesRes, assignmentsRes] = await Promise.all([
-                        api.get('/lectures'),
-                        api.get(`/assignments/faculty/${user._id}`)
-                    ]);
-                    
-                    const filteredLectures = lecturesRes.data
-                        .filter(l => moment(l.start).isAfter(moment()))
-                        .sort((a, b) => moment(a.start).diff(moment(b.start))) // Sort by upcoming
-                        .slice(0, 5);
-
-                    setUpcomingLectures(filteredLectures);
-                    setPostedAssignments(assignmentsRes.data.slice(0, 5));
-                } catch (error) {
-                    console.error("Error fetching faculty-specific data", error);
-                }
-            }
-        };
-        fetchData();
+        if (user?._id) {
+            fetchUpcomingLectures();
+            fetchPostedAssignments();
+        }
     }, [user?._id]);
 
-    const InfoCard = ({ title, data, icon, renderItem, bgColor }) => (
+    // Auto-refresh every 30 seconds
+    useEffect(() => {
+        const interval = setInterval(() => {
+            if (user?._id) {
+                fetchUpcomingLectures();
+                fetchPostedAssignments();
+            }
+        }, 30000);
+
+        return () => clearInterval(interval);
+    }, [user?._id]);
+
+    const InfoCard = ({ title, data, icon, renderItem, bgColor, onRefresh }) => (
         <Paper sx={{ p: 3, borderRadius: '16px', height: '100%', bgcolor: bgColor || 'background.paper' }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                {icon}
-                <Typography variant="h6" sx={{ ml: 1, fontWeight: 'bold' }}>{title}</Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    {icon}
+                    <Typography variant="h6" sx={{ ml: 1, fontWeight: 'bold' }}>{title}</Typography>
+                </Box>
+                {onRefresh && (
+                    <Button 
+                        size="small" 
+                        onClick={onRefresh}
+                        disabled={loading}
+                        startIcon={<Refresh />}
+                    >
+                        Refresh
+                    </Button>
+                )}
             </Box>
             <Divider />
-            <List>
-                {data.length > 0 ? data.map(renderItem) : <ListItem><ListItemText primary={`No ${title.toLowerCase()} found.`} /></ListItem>}
+            <List sx={{ maxHeight: '300px', overflow: 'auto' }}>
+                {data.length > 0 ? data.map(renderItem) : (
+                    <ListItem>
+                        <ListItemText 
+                            primary={`No ${title.toLowerCase()} found.`}
+                            secondary="Data will appear here when available"
+                        />
+                    </ListItem>
+                )}
             </List>
         </Paper>
     );
@@ -65,11 +103,32 @@ const FacultyDashboard = ({ toggleTheme }) => {
                             icon={<Event color="primary" />}
                             data={upcomingLectures}
                             bgColor={alpha(theme.palette.primary.main, 0.1)}
+                            onRefresh={fetchUpcomingLectures}
                             renderItem={(item) => (
                                 <ListItem key={item._id}>
                                     <ListItemText 
-                                        primary={`${item.subject.name} - ${item.title}`}
-                                        secondary={`${moment(item.start).format('MMMM Do, h:mm a')} at ${item.venue || 'N/A'}`}
+                                        primary={
+                                            <Box>
+                                                <Typography variant="subtitle2" fontWeight="bold">
+                                                    {item.subject.name}
+                                                </Typography>
+                                                <Chip 
+                                                    label={moment(item.start).fromNow()} 
+                                                    size="small" 
+                                                    color={moment(item.start).diff(moment(), 'hours') <= 2 ? 'error' : 'primary'}
+                                                />
+                                            </Box>
+                                        }
+                                        secondary={
+                                            <Box sx={{ mt: 1 }}>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    {moment(item.start).format('MMMM Do, h:mm A')}
+                                                </Typography>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    Venue: {item.venue || 'TBA'}
+                                                </Typography>
+                                            </Box>
+                                        }
                                     />
                                 </ListItem>
                             )}
@@ -82,11 +141,28 @@ const FacultyDashboard = ({ toggleTheme }) => {
                             icon={<Assignment color="secondary" />}
                             data={postedAssignments}
                             bgColor={alpha(theme.palette.secondary.main, 0.1)}
+                            onRefresh={fetchPostedAssignments}
                             renderItem={(item) => (
                                 <ListItem key={item._id}>
                                     <ListItemText 
-                                        primary={`${item.subject.name} - ${item.title}`}
-                                        secondary={`Due: ${moment(item.dueDate).format('MMMM Do, YYYY')}`}
+                                        primary={
+                                            <Typography variant="subtitle2" fontWeight="bold">
+                                                {item.subject?.name} - {item.title}
+                                            </Typography>
+                                        }
+                                        secondary={
+                                            <Box>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    Due: {moment(item.dueDate).format('MMMM Do, YYYY')}
+                                                </Typography>
+                                                <Chip 
+                                                    label={moment(item.dueDate).diff(moment(), 'days') <= 3 ? 'Due Soon' : 'Active'} 
+                                                    size="small" 
+                                                    color={moment(item.dueDate).diff(moment(), 'days') <= 3 ? 'warning' : 'success'}
+                                                    sx={{ mt: 0.5 }}
+                                                />
+                                            </Box>
+                                        }
                                     />
                                 </ListItem>
                             )}

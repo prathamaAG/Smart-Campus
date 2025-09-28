@@ -1,4 +1,4 @@
-const AuthUser = require('../models/User'); // Using a different alias to avoid conflict with User in other controllers
+const AuthUser = require('../models/User');
 const Activity = require('../models/Activity');
 const jsonwebtoken = require('jsonwebtoken');
 
@@ -9,7 +9,7 @@ const generateAuthToken = (id) => {
 };
 
 exports.registerUser = async (req, res) => {
-  const { name, email, password, role, semester, division } = req.body;
+  const { name, email, password, role, semester } = req.body;
 
   try {
     const userExists = await AuthUser.findOne({ email });
@@ -19,37 +19,45 @@ exports.registerUser = async (req, res) => {
     }
 
     const user = await AuthUser.create({
-      name, email, password, role,
+      name, 
+      email, 
+      password, 
+      role,
       status: role === 'Faculty' ? 'pending' : 'active',
       semester: role === 'Student' ? semester : undefined,
-      division: role === 'Student' ? division : undefined,
     });
 
     if (user) {
       // Log activity
       await Activity.create({
-        message: `${user.name} (${user.role}) registered.`,
+        message: `${role} account created for ${name}.`,
         type: 'user_registered',
         user: user._id,
       });
 
       res.status(201).json({
-        _id: user._id, name: user.name, email: user.email, role: user.role,
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        semester: user.semester,
+        status: user.status,
         token: generateAuthToken(user._id),
       });
     } else {
       res.status(400).json({ message: 'Invalid user data' });
     }
   } catch (error) {
+    console.error('Registration error:', error);
     res.status(500).json({ message: 'Server Error', error: error.message });
   }
 };
 
-exports.loginUser = async (req, res) => {
+exports.authUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const user = await AuthUser.findOne({ email }).populate('subjects', 'name code');
+    const user = await AuthUser.findOne({ email });
 
     if (user && (await user.matchPassword(password))) {
       res.json({
@@ -57,6 +65,8 @@ exports.loginUser = async (req, res) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        semester: user.semester,
+        status: user.status,
         subjects: user.subjects,
         token: generateAuthToken(user._id),
       });
@@ -64,25 +74,21 @@ exports.loginUser = async (req, res) => {
       res.status(401).json({ message: 'Invalid email or password' });
     }
   } catch (error) {
+    console.error('Authentication error:', error);
     res.status(500).json({ message: 'Server Error', error: error.message });
   }
 };
 
+// Add the getUserProfile function
 exports.getUserProfile = async (req, res) => {
-    try {
-        const user = await AuthUser.findById(req.user.id).select('-password').populate('subjects', 'name code');
-        if(user){
-            res.json({
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                subjects: user.subjects,
-            });
-        } else {
-            res.status(404).json({ message: 'User not found' });
-        }
-    } catch (error) {
-        res.status(500).json({ message: 'Server Error', error: error.message });
+  try {
+    const user = await AuthUser.findById(req.user._id).select('-password').populate('subjects', 'name code');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
     }
+    res.json(user);
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    res.status(500).json({ message: 'Server Error' });
+  }
 };

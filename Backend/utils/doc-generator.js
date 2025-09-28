@@ -1,4 +1,4 @@
-const { Document, Packer, Paragraph, TextRun, HeadingLevel } = require('docx');
+const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = require('docx');
 const mammoth = require('mammoth');
 const fs = require('fs');
 const path = require('path');
@@ -35,48 +35,156 @@ class DocumentGenerator {
         const paragraphs = [];
         const lines = text.split('\n');
 
-        lines.forEach(line => {
+        lines.forEach((line, index) => {
             const trimmedLine = line.trim();
-            if (trimmedLine.startsWith('**') && trimmedLine.endsWith('**')) {
-                // Bold and centered for headings
-                const headingText = trimmedLine.substring(2, trimmedLine.length - 2);
-                paragraphs.push(new Paragraph({
-                    children: [new TextRun({ text: headingText, bold: true })],
-                    heading: HeadingLevel.HEADING_1,
-                    alignment: 'center'
-                }));
-            } else if (trimmedLine.startsWith('*') && trimmedLine.endsWith('*')) {
-                // Bold for subheadings
-                const subHeadingText = trimmedLine.substring(1, trimmedLine.length - 1);
-                paragraphs.push(new Paragraph({
-                    children: [new TextRun({ text: subHeadingText, bold: true })],
-                    heading: HeadingLevel.HEADING_2,
-                }));
-            } else if (trimmedLine.startsWith('```python')) {
-                // Code blocks
-                const codeLines = [];
-                let i = lines.indexOf(line) + 1;
-                while (i < lines.length && !lines[i].startsWith('```')) {
-                    codeLines.push(lines[i]);
-                    i++;
-                }
-                const codeText = codeLines.join('\n');
-                paragraphs.push(new Paragraph({
-                    children: [new TextRun({ text: codeText, font: { name: 'Courier New' } })],
-                    style: "code"
-                }));
-                // Skip lines already processed
-                lines.splice(lines.indexOf(line), codeLines.length + 1);
+            
+            if (trimmedLine === '') {
+                // Skip empty lines but add spacing
+                return;
             }
-            else {
-                // Regular paragraphs
+
+            // Main title (# Title)
+            if (trimmedLine.startsWith('# ')) {
+                const titleText = trimmedLine.substring(2).trim();
                 paragraphs.push(new Paragraph({
-                    children: [new TextRun(trimmedLine)],
+                    children: [new TextRun({ 
+                        text: titleText, 
+                        bold: true, 
+                        size: 32,
+                        font: { name: 'Times New Roman' },
+                        color: '000000' // Black color
+                    })],
+                    heading: HeadingLevel.TITLE,
+                    alignment: AlignmentType.CENTER,
+                    spacing: { after: 400 }
+                }));
+            }
+            // H2 headings (## Heading)
+            else if (trimmedLine.startsWith('## ')) {
+                const headingText = trimmedLine.substring(3).trim();
+                paragraphs.push(new Paragraph({
+                    children: [new TextRun({ 
+                        text: headingText, 
+                        bold: true, 
+                        size: 28,
+                        font: { name: 'Times New Roman' },
+                        color: '000000' // Black color
+                    })],
+                    heading: HeadingLevel.HEADING_1,
+                    spacing: { before: 300, after: 200 }
+                }));
+            }
+            // H3 headings (### Heading)
+            else if (trimmedLine.startsWith('### ')) {
+                const headingText = trimmedLine.substring(4).trim();
+                paragraphs.push(new Paragraph({
+                    children: [new TextRun({ 
+                        text: headingText, 
+                        bold: true, 
+                        size: 24,
+                        font: { name: 'Times New Roman' },
+                        color: '000000' // Black color
+                    })],
+                    heading: HeadingLevel.HEADING_2,
+                    spacing: { before: 200, after: 150 }
+                }));
+            }
+            // Bold text (**text**)
+            else if (trimmedLine.includes('**')) {
+                const textRuns = this.parseBoldText(trimmedLine);
+                paragraphs.push(new Paragraph({
+                    children: textRuns,
+                    spacing: { after: 150 }
+                }));
+            }
+            // List items (- item or * item)
+            else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
+                const listText = trimmedLine.substring(2).trim();
+                paragraphs.push(new Paragraph({
+                    children: [
+                        new TextRun({ text: '• ', bold: true }),
+                        new TextRun({ text: listText })
+                    ],
+                    indent: { left: 400 },
+                    spacing: { after: 100 }
+                }));
+            }
+            // Numbered list items (1. item)
+            else if (/^\d+\.\s/.test(trimmedLine)) {
+                const listText = trimmedLine.substring(trimmedLine.indexOf('.') + 1).trim();
+                const number = trimmedLine.substring(0, trimmedLine.indexOf('.') + 1);
+                paragraphs.push(new Paragraph({
+                    children: [
+                        new TextRun({ text: number + ' ', bold: true }),
+                        new TextRun({ text: listText })
+                    ],
+                    indent: { left: 400 },
+                    spacing: { after: 100 }
+                }));
+            }
+            // Code blocks (```code```)
+            else if (trimmedLine.startsWith('```') && trimmedLine.endsWith('```')) {
+                const codeText = trimmedLine.substring(3, trimmedLine.length - 3);
+                paragraphs.push(new Paragraph({
+                    children: [new TextRun({ 
+                        text: codeText, 
+                        font: { name: 'Courier New' },
+                        size: 20 
+                    })],
+                    shading: { fill: 'f5f5f5' },
+                    spacing: { before: 100, after: 100 }
+                }));
+            }
+            // Regular paragraphs
+            else {
+                const textRuns = this.parseBoldText(trimmedLine);
+                paragraphs.push(new Paragraph({
+                    children: textRuns,
+                    spacing: { after: 150 }
                 }));
             }
         });
 
         return paragraphs;
+    }
+
+    parseBoldText(text) {
+        const textRuns = [];
+        const parts = text.split('**');
+        
+        for (let i = 0; i < parts.length; i++) {
+            if (i % 2 === 0) {
+                // Regular text
+                if (parts[i].trim()) {
+                    textRuns.push(new TextRun({ 
+                        text: parts[i],
+                        font: { name: 'Times New Roman' },
+                        color: '000000' // Black color
+                    }));
+                }
+            } else {
+                // Bold text
+                if (parts[i].trim()) {
+                    textRuns.push(new TextRun({ 
+                        text: parts[i], 
+                        bold: true,
+                        font: { name: 'Times New Roman' },
+                        color: '000000' // Black color
+                    }));
+                }
+            }
+        }
+        
+        // If no bold text found, just return the original text
+        if (textRuns.length === 0) {
+            textRuns.push(new TextRun({ 
+                text: text,
+                font: { name: 'Times New Roman' },
+                color: '000000' // Black color
+            }));
+        }
+        
+        return textRuns;
     }
 
     createParagraphsFromText(text) {
@@ -88,6 +196,7 @@ class DocumentGenerator {
                         text: paragraphText.trim(),
                     }),
                 ],
+                spacing: { after: 150 }
             })
         );
     }

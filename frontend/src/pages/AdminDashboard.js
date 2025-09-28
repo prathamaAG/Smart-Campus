@@ -8,6 +8,7 @@ import SchoolIcon from '@mui/icons-material/School';
 import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 import MenuBookIcon from '@mui/icons-material/MenuBook';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
+import CampaignIcon from '@mui/icons-material/Campaign';
 import moment from 'moment';
 
 const StatCard = ({ title, value, icon, color = 'primary', to }) => (
@@ -41,7 +42,7 @@ const StatCard = ({ title, value, icon, color = 'primary', to }) => (
 );
 
 const AdminDashboard = ({ toggleTheme }) => {
-    const [stats, setStats] = useState({ students: 0, faculty: 0, lectures: 0, subjects: 0 });
+    const [stats, setStats] = useState({ students: 0, faculty: 0, lectures: 0, subjects: 0, announcements: 0 });
     const [recentUsers, setRecentUsers] = useState([]);
     const [activityFeed, setActivityFeed] = useState([]);
     const [pendingFacultyCount, setPendingFacultyCount] = useState(0);
@@ -49,17 +50,19 @@ const AdminDashboard = ({ toggleTheme }) => {
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                const [usersRes, subjectsRes, lecturesRes, activitiesRes] = await Promise.all([
+                const [usersRes, subjectsRes, lecturesRes, activitiesRes, announcementsRes] = await Promise.all([
                     api.get('/users'),
                     api.get('/subjects'),
                     api.get('/lectures'),
-                    api.get('/activities')
+                    api.get('/activities'),
+                    api.get('/announcements')
                 ]);
 
                 const allUsers = usersRes.data;
                 const allSubjects = subjectsRes.data;
                 const allLectures = lecturesRes.data;
                 const allActivities = activitiesRes.data;
+                const allAnnouncements = announcementsRes.data;
 
                 const pendingFaculty = allUsers.filter(u => u.role === 'Faculty' && u.status === 'pending');
                 setPendingFacultyCount(pendingFaculty.length);
@@ -68,7 +71,8 @@ const AdminDashboard = ({ toggleTheme }) => {
                     students: allUsers.filter(u => u.role === 'Student').length,
                     faculty: allUsers.filter(u => u.role === 'Faculty').length,
                     lectures: allLectures.filter(l => moment(l.start).isAfter(moment().startOf('day')) && moment(l.start).isBefore(moment().endOf('day'))).length,
-                    subjects: allSubjects.length
+                    subjects: allSubjects.length,
+                    announcements: allAnnouncements.length
                 });
                 
                 setRecentUsers(allUsers.slice(-5).reverse());
@@ -124,7 +128,7 @@ const AdminDashboard = ({ toggleTheme }) => {
                         <StatCard title="Total Faculty" value={stats.faculty} icon={<SchoolIcon />} color="success" to="/admin/users" />
                     </Grid>
                     <Grid item xs={12} sm={6} md={2.4}>
-                        <StatCard title="Lectures Today" value={stats.lectures} icon={<EventAvailableIcon />} color="secondary" to="/admin/master-calendar" />
+                        <StatCard title="Announcements" value={stats.announcements} icon={<CampaignIcon />} color="secondary" to="/admin/announcements" />
                     </Grid>
                     <Grid item xs={12} sm={6} md={2.4}>
                         <StatCard title="Total Subjects" value={stats.subjects} icon={<MenuBookIcon />} color="error" to="/admin/subjects" />

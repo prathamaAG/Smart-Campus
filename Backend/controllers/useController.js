@@ -107,3 +107,41 @@ exports.getMe = async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 };
+
+// @desc    Delete user
+// @route   DELETE /api/users/:id
+// @access  Private/Admin
+exports.deleteUser = async (req, res) => {
+    try {
+        console.log('Delete user request for ID:', req.params.id);
+        
+        const user = await AllUsersModel.findById(req.params.id);
+
+        if (!user) {
+            console.log('User not found for deletion:', req.params.id);
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        console.log('Found user for deletion:', { id: user._id, name: user.name, role: user.role });
+
+        // Prevent deleting admin users
+        if (user.role === 'Admin') {
+            console.log('Attempted to delete admin user - blocked');
+            return res.status(403).json({ message: 'Cannot delete admin users' });
+        }
+
+        // Use deleteOne() method
+        await AllUsersModel.deleteOne({ _id: req.params.id });
+        
+        console.log('User deleted successfully:', user.name);
+        res.json({ message: 'User deleted successfully' });
+        
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        res.status(500).json({ 
+            message: 'Server Error', 
+            error: error.message,
+            details: 'Failed to delete user from database'
+        });
+    }
+};

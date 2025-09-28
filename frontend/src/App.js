@@ -14,13 +14,14 @@ import PrivateRoute from './components/common/PrivateRoutes';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { AnimatePresence } from 'framer-motion';
-import AIChat from './components/student/AIChat';
 import AssignmentSolver from './components/student/AssignmentSolver';
 import Layout from './components/common/Layout'; 
 import TaskManager from './pages/TaskManager';
 import MySchedule from './pages/MySchedule';
 import LectureSchedulePage from './pages/LectureSchedulePage';
 import AssignmentPostPage from './pages/AssignmentPostPage';
+import AnnouncementManagement from './components/common/admin/AnnouncementManagement';
+import MyAssignments from './pages/MyAssignments';
 
 const getDesignTokens = (mode) => ({
   palette: {
@@ -131,7 +132,16 @@ function App() {
                 } />
                 <Route path="/admin/announcement" element={
                   <PrivateRoute roles={['Admin']}>
-                    <CreateAnnouncement toggleTheme={toggleTheme} />
+                    <Layout toggleTheme={toggleTheme}>
+                      <AnnouncementManagement />
+                    </Layout>
+                  </PrivateRoute>
+                } />
+                <Route path="/admin/announcements" element={
+                  <PrivateRoute roles={['Admin']}>
+                    <Layout toggleTheme={toggleTheme}>
+                      <AnnouncementManagement />
+                    </Layout>
                   </PrivateRoute>
                 } />
                 <Route path="/faculty" element={ <PrivateRoute roles={['Faculty']}><FacultyDashboard toggleTheme={toggleTheme} /></PrivateRoute> } />
@@ -141,6 +151,11 @@ function App() {
                 <Route path="/student/tasks" element={ <PrivateRoute roles={['Student']}><TaskManager toggleTheme={toggleTheme} /></PrivateRoute> } />
                 <Route path="/student/schedule" element={ <PrivateRoute roles={['Student']}><MySchedule toggleTheme={toggleTheme} /></PrivateRoute> } />
                 <Route path="/student/assignment-solver" element={ <PrivateRoute roles={['Student']}><Layout toggleTheme={toggleTheme}><AssignmentSolver /></Layout></PrivateRoute> } />
+                <Route path="/student/assignments" element={ 
+                  <PrivateRoute roles={['Student']}>
+                    <MyAssignments toggleTheme={toggleTheme} />
+                  </PrivateRoute> 
+                } />
                 
                 <Route path="/" element={<RegisterPage />} />
             </Routes>

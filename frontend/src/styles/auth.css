@@ -1,0 +1,36 @@
+/* Auth page optimizations */
+.auth-background {
+    background-attachment: fixed;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+/* For mobile devices - remove fixed attachment for better performance */
+@media (max-width: 768px) {
+    .auth-background {
+        background-attachment: scroll;
+    }
+    
+    /* Adjust backdrop blur for mobile performance */
+    .auth-card-mobile {
+        backdrop-filter: blur(8px) !important;
+    }
+}
+
+/* Enhance glass morphism effect */
+.auth-glass-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+/* University branding */
+.university-branding {
+    background: linear-gradient(135deg, #2196f3 0%, #21cbf3 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    text-shadow: none;
+}

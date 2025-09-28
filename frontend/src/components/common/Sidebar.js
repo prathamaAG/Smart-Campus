@@ -26,7 +26,7 @@ const Sidebar = ({ window, mobileOpen, handleDrawerToggle, drawerWidth }) => {
             { text: 'User Management', path: '/admin/users', icon: <PeopleIcon /> },
             { text: 'Subject Management', path: '/admin/subjects', icon: <BookIcon /> },
             { text: 'Faculty Requests', path: '/admin/faculty-requests', icon: <PeopleIcon /> },
-            { text: 'Create Announcement', path: '/admin/announcement', icon: <CampaignIcon /> },
+            { text: 'Announcements', path: '/admin/announcements', icon: <CampaignIcon /> },
         ];
     } else if (user?.role === 'Faculty') {
         panelTitle = 'Faculty Portal';
@@ -40,6 +40,7 @@ const Sidebar = ({ window, mobileOpen, handleDrawerToggle, drawerWidth }) => {
         menuItems = [
             { text: 'Home', path: '/student', icon: <DashboardIcon /> },
             { text: 'My Schedule', path: '/student/schedule', icon: <CalendarMonthIcon /> },
+            { text: 'My Assignments', path: '/student/assignments', icon: <AssignmentIcon /> },
             { text: 'Task Manager', path: '/student/tasks', icon: <AssignmentIcon /> },
             { text: 'Assignment Solver', path: '/student/assignment-solver', icon: <AutoFixHighIcon /> },
         ];

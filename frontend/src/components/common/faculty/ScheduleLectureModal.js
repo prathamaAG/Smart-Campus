@@ -20,16 +20,19 @@ const ScheduleLectureModal = ({ open, handleClose, refreshLectures }) => {
     const [title, setTitle] = useState('');
     const [subject, setSubject] = useState('');
     const [semester, setSemester] = useState('');
-    const [division, setDivision] = useState('');
     const [start, setStart] = useState('');
     const [end, setEnd] = useState('');
+    const [venue, setVenue] = useState('');
     const [subjects, setSubjects] = useState([]);
 
     useEffect(() => {
         const fetchFacultySubjects = async () => {
             if (user?._id) {
                 const { data } = await api.get('/subjects');
-                setSubjects(data);
+                const facultySubjects = data.filter(s => 
+                    s.faculty && s.faculty.includes(user.name)
+                );
+                setSubjects(facultySubjects);
             }
         };
         if (open) {
@@ -40,11 +43,27 @@ const ScheduleLectureModal = ({ open, handleClose, refreshLectures }) => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await api.post('/lectures', { title, subject, semester, division, start, end });
+            await api.post('/lectures', { 
+                title, 
+                subject, 
+                semester: parseInt(semester), 
+                start, 
+                end,
+                venue 
+            });
             refreshLectures();
             handleClose();
+            
+            // Reset form
+            setTitle('');
+            setSubject('');
+            setSemester('');
+            setStart('');
+            setEnd('');
+            setVenue('');
         } catch (error) {
             console.error("Failed to schedule lecture", error);
+            alert('Failed to schedule lecture. Please try again.');
         }
     };
 
@@ -57,11 +76,13 @@ const ScheduleLectureModal = ({ open, handleClose, refreshLectures }) => {
                     <FormControl fullWidth margin="normal" required>
                         <InputLabel>Subject</InputLabel>
                         <Select value={subject} onChange={e => setSubject(e.target.value)} label="Subject">
-                            {subjects.map(s => <MenuItem key={s._id} value={s._id}>{s.name}</MenuItem>)}
+                            {subjects.map(s => (
+                                <MenuItem key={s._id} value={s._id}>{s.name} - Sem {s.semester}</MenuItem>
+                            ))}
                         </Select>
                     </FormControl>
                     <TextField label="Semester" type="number" value={semester} onChange={e => setSemester(e.target.value)} fullWidth margin="normal" required />
-                    <TextField label="Division" value={division} onChange={e => setDivision(e.target.value)} fullWidth margin="normal" required />
+                    <TextField label="Venue" value={venue} onChange={e => setVenue(e.target.value)} fullWidth margin="normal" />
                     <TextField label="Start Time" type="datetime-local" value={start} onChange={e => setStart(e.target.value)} fullWidth margin="normal" InputLabelProps={{ shrink: true }} required />
                     <TextField label="End Time" type="datetime-local" value={end} onChange={e => setEnd(e.target.value)} fullWidth margin="normal" InputLabelProps={{ shrink: true }} required />
                     <Button type="submit" variant="contained" sx={{ mt: 2, py: 1.5, width: '100%' }}>Schedule</Button>
