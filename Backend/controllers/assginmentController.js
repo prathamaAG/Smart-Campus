@@ -132,12 +132,30 @@ exports.downloadAssignmentFile = async (req, res) => {
             return res.status(404).json({ message: 'File not found on server' });
         }
 
-        res.download(filePath, (err) => {
-            if (err) {
-                console.error('Error downloading file:', err);
-                res.status(500).json({ message: 'Error downloading file' });
-            }
+        // Get original file extension and preserve it
+        const originalExtension = path.extname(filePath);
+        const downloadFileName = `${assignment.title.replace(/[^a-zA-Z0-9]/g, '_')}_Assignment${originalExtension}`;
+        
+        // Set proper content type based on file extension
+        let contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        if (originalExtension === '.doc') {
+            contentType = 'application/msword';
+        }
+
+        // Set headers to force download as Word document
+        res.setHeader('Content-Type', contentType);
+        res.setHeader('Content-Disposition', `attachment; filename="${downloadFileName}"`);
+        res.setHeader('Content-Transfer-Encoding', 'binary');
+
+        // Stream the file directly without conversion
+        const fileStream = fs.createReadStream(filePath);
+        fileStream.on('error', (error) => {
+            console.error('File stream error:', error);
+            res.status(500).json({ message: 'Error reading file' });
         });
+        
+        fileStream.pipe(res);
+
     } catch (error) {
         console.error('Error in download route:', error);
         res.status(500).json({ message: 'Server Error', error: error.message });

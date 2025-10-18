@@ -67,7 +67,7 @@
     "lodash.isplainobject": "^4.0.6",
     "lodash.isstring": "^4.0.1",
     "lodash.once": "^4.1.1",
-    "mammoth": "^1.9.1",
+    "mammoth": "^1.11.0",
     "math-intrinsics": "^1.1.0",
     "media-typer": "^1.1.0",
     "memory-pager": "^1.5.0",

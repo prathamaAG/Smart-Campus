@@ -10,9 +10,9 @@ const storage = multer.diskStorage({
         cb(null, 'uploads/');
     },
     filename: function (req, file, cb) {
-        // Generate unique filename with timestamp
+        // Generate unique filename with timestamp, force .docx extension
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-        cb(null, 'assignment-' + uniqueSuffix + path.extname(file.originalname));
+        cb(null, 'assignment-' + uniqueSuffix + '.docx');
     }
 });
 
@@ -22,18 +22,13 @@ const upload = multer({
         fileSize: 10 * 1024 * 1024 // 10MB limit
     },
     fileFilter: (req, file, cb) => {
-        // Allow common document types
-        const allowedTypes = [
-            'application/pdf',
-            'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'text/plain'
-        ];
+        console.log('File upload attempt:', file.originalname, file.mimetype);
         
-        if (allowedTypes.includes(file.mimetype)) {
+        // Strictly allow only DOCX files
+        if (file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
             cb(null, true);
         } else {
-            cb(new Error('Only PDF, DOC, DOCX, and TXT files are allowed'), false);
+            cb(new Error('Only .docx files are allowed'), false);
         }
     }
 });

@@ -240,21 +240,28 @@ const AssignmentPostPage = ({ toggleTheme }) => {
                                         startIcon={<AttachFile />}
                                         sx={{ py: 2 }}
                                     >
-                                        Upload Assignment File
+                                        Upload Assignment File (DOCX Only)
                                         <input 
                                             type="file" 
                                             name="file" 
                                             hidden 
                                             onChange={handleAssignmentChange}
-                                            accept=".pdf,.doc,.docx,.txt"
+                                            accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                                         />
                                     </Button>
                                     {assignmentData.file && (
-                                        <Chip 
-                                            label={assignmentData.file.name}
-                                            onDelete={() => setAssignmentData(prev => ({...prev, file: null}))}
-                                            sx={{ mt: 1 }}
-                                        />
+                                        <Box sx={{ mt: 1 }}>
+                                            <Chip 
+                                                label={assignmentData.file.name}
+                                                color={assignmentData.file.name.toLowerCase().endsWith('.docx') ? 'success' : 'error'}
+                                                onDelete={() => setAssignmentData(prev => ({...prev, file: null}))}
+                                            />
+                                            {!assignmentData.file.name.toLowerCase().endsWith('.docx') && (
+                                                <Typography variant="caption" color="error" display="block">
+                                                    Please upload a .docx file only
+                                                </Typography>
+                                            )}
+                                        </Box>
                                     )}
                                 </Box>
                             )}
